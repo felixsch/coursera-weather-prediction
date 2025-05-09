@@ -1,17 +1,56 @@
-from flask import Flask, request
+from flask import Flask, flash, request, redirect, url_for, render_template
+import os
+from datetime import datetime
+
+from src.database import db, create_database
+from src.models import Predictions
+from src.weather_api_provider import WeatherProvider, WeatherAPIError
 
 app = Flask(__name__)
 
-@app.route("/")
-def main():
-    return '''
-     <form action="/echo_user_input" method="POST">
-         <input name="user_input">
-         <input type="submit" value="Submit!">
-     </form>
-     '''
+basedir = os.path.abspath(os.path.join(app.root_path, '..'))
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'development_secret_key')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'db', 'database.sqlite')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-@app.route("/echo_user_input", methods=["POST"])
-def echo_input():
-    input_text = request.form.get("user_input", "")
-    return "You entered: " + input_text
+db.init_app(app)
+
+@app.cli.command('initialize-database')
+def initialize_database():
+    create_database(app)
+
+@app.route("/")
+def index():
+    predictions = Predictions.query.order_by(Predictions.day.desc()).all()
+    return render_template('index.html', predictions=predictions)
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    lat = request.form.get("lat", "")
+    lon = request.form.get("lon", "")
+
+    if not lat or not lon:
+        flash("Invalid latitude or longitude entered")
+        return redirect(url_for("index"), "danger")
+
+    try:
+        provider = WeatherProvider()
+        predictions = provider.prediction_for(float(lat), float(lon))
+
+        for day, prediction in predictions.items():
+            row = Predictions(
+                    lat=lat,
+                    lon=lon,
+                    day=datetime.strptime(day, "%Y-%m-%d"),
+                    min_temperature=prediction["min"],
+                    mean_temperature=prediction["mean"],
+                    max_temperature=prediction["max"]
+            )
+            db.session.add(row)
+        db.session.commit()
+        flash("New predictions added", "success")
+        return redirect(url_for("index"))
+
+    except WeatherAPIError as err:
+        flash(str(err), "danger")
+        return redirect(url_for("index"))
