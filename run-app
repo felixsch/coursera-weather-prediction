@@ -1,0 +1,12 @@
+#!/bin/bash
+
+FLASK_APP="src/app.py"
+SECRET_KEY=$(uuidgen)
+
+pip install -r requirements.txt
+
+if [ ! -d db/ ]; then
+  flask initialize-database
+fi
+
+flask $@

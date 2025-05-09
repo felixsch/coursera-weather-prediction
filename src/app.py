@@ -54,3 +54,6 @@ def predict():
     except WeatherAPIError as err:
         flash(str(err), "danger")
         return redirect(url_for("index"))
+    except ValueError:
+        flash("Could not parse latitude or longitude. Make sure your entered values follow floating point convention", "danger")
+        return redirect(url_for("index"))
