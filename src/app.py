@@ -30,7 +30,7 @@ def index():
 @app.route("/health")
 @metrics.do_not_track()
 def health():
-    pass
+    return ('ok', 200)
 
 @app.route("/predict", methods=["POST"])
 def predict():
