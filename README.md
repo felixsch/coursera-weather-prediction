@@ -18,3 +18,5 @@ weather-example\Scripts\activate
 # Step 5: Open the page in your browser
 xdg-open http://localhost:5000
 ```
+
+Note: When you running the Flask application manually without the script `run-app` make sure to run `flask initialize-database` before you run `FLASK_APP="src/app.py" flask run`.
