@@ -1,4 +1,4 @@
-A quick webapp using flask and sqlalchemy to load weather predictions from openMeteo.
+A quick web application using Flask and Sqlalchemy to load weather predictions from openMeteo.
 
 ## How to run this App
 
